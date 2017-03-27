@@ -1,5 +1,6 @@
 import sys
 from util import *
+import math
 from collections import defaultdict
 
 
@@ -35,14 +36,16 @@ def phrase_extract(bitext, align, phr_file, freq_thred=2):
     fout = open(phr_file, 'w')
     for (s_phr, t_dict) in cnt_st_filt.iteritems():
         for t_phr in t_dict:
-            score = cnt_st_filt[s_phr][t_phr] / cnt_t[t_phr]
+            prob = cnt_st_filt[s_phr][t_phr] / cnt_t[t_phr]
+            score = -math.log(prob)
+            if score < 10e-20: score = 0
             print >> fout, "%s\t%s\t%.4f" % (s_phr, t_phr, score)
     fout.close()
 
 
 def phrase_extract_sents(s_sent, t_sent, align, len_thred=3):
     BP = []
-    tgt_align = [i for (i, j) in align]  # (i, j) (src, tgt)
+    tgt_align = [i for (i, j) in align]  # (i, j) (tgt, src)
     src_align = [j for (i, j) in align]
     for i1 in range(len(t_sent)):
         for i2 in range(i1, len(t_sent)):
@@ -54,7 +57,7 @@ def phrase_extract_sents(s_sent, t_sent, align, len_thred=3):
             # Check quasi-consecutive of TP
             is_consecutive = True
             j1, j2 = min(TP), max(TP)
-            for j in range(j1, j2):
+            for j in range(j1, j2 + 1):
                 if j not in TP and j in src_align:
                     is_consecutive = False
                     break
@@ -67,7 +70,8 @@ def phrase_extract_sents(s_sent, t_sent, align, len_thred=3):
                 t_phr = " ".join(t_sent[i1: i2 + 1])
                 s_phr = " ".join(s_sent[j1: j2 + 1])
                 if len_thred:
-                    if i2 + 1 - i1 <= len_thred and j2 + 1 - j1 <= len_thred:
+                    #if i2 + 1 - i1 <= len_thred and j2 + 1 - j1 <= len_thred:
+                    if len(t_phr.split()) <= len_thred and len(s_phr.split()) <= len_thred:
                         BP.append((s_phr, t_phr))
                 else:
                     BP.append((s_phr, t_phr))
