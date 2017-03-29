@@ -6,8 +6,9 @@ def read_bitext(src_file, tgt_file):
     tgt_sents, tgt_vocab = read_corpus(tgt_file)
     assert len(src_sents) == len(tgt_sents), '#src = {} != #tgt = {}'.format(len(src_sents), len(tgt_sents))
     print('|E| = {}, |F| = {}'.format(len(src_vocab), len(tgt_vocab)))
-    bitext = [(s, tgt_sents[sidx]) for (sidx, s) in enumerate(src_sents)]
-    return bitext, src_vocab, tgt_vocab
+    #bitext = [(s, tgt_sents[sidx]) for (sidx, s) in enumerate(src_sents)]
+    bitext = zip(src_sents, tgt_sents)
+    return bitext#, src_vocab, tgt_vocab
 
 
 def read_corpus(file_name):

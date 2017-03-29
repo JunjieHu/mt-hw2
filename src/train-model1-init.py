@@ -6,8 +6,9 @@ from util import *
 
 
 class IBM1():
-    def __init__(self, bitext):
+    def __init__(self, bitext, src_vocab, tgt_vocab):
         self.bitext = bitext
+        self.src_vocab, self.tgt_vocab = src_vocab, tgt_vocab
         self.theta = None
         self.epsilon = 1.0 / max(len(ss) for (ss, tt) in self.bitext)
         self.max_iter = 20
@@ -16,11 +17,19 @@ class IBM1():
         # (1) initialize translation probability
         print('Begin Initialization')
         self.theta = defaultdict(lambda: defaultdict(float))
+        cnt_ts = defaultdict(float)
+        cnt_t = defaultdict(float)
+
+        for idx, (s_sent, t_sent) in enumerate(self.bitext):
+            for t in t_sent:
+                cnt_t[t] += 1
+                for s in s_sent:
+                    cnt_ts[(t, s)] += 1
+
         for (s_sent, t_sent) in self.bitext:
             for t in t_sent:
                 for s in s_sent:
-                    # self.theta[t][s] = 1.0 / (len(self.tgt_vocab) + 1)
-                    self.theta[t][s] = 1.0 / 2000
+                    self.theta[t][s] = cnt_ts[(t, s)] / cnt_t[t]
 
         print('Begin Training JJ')
         for iter in range(self.max_iter):
@@ -81,8 +90,11 @@ def main():
     # src_file = "../en-de/valid.en-de.low.de"
     # tgt_file = "../en-de/valid.en-de.low.en"
     # alg_file = "../output/valid-alignment.txt"
-    bitext = read_bitext(src_file, tgt_file)
-    ibm = IBM1(bitext)
+
+    src_sents, src_vocab = read_corpus(src_file)
+    tgt_sents, tgt_vocab = read_corpus(tgt_file)
+    bitext = zip(src_sents, tgt_sents)
+    ibm = IBM1(bitext, src_vocab, tgt_vocab)
     ibm.train()
     ibm.align(alg_file)
 

@@ -11,6 +11,8 @@ class IBM1():
         self.theta = None
         self.epsilon = 1.0 / max(len(ss) for (ss, tt) in self.bitext)
         self.max_iter = 20
+        self.n = 2
+        self.tgt_size = 2000
 
     def train(self):
         # (1) initialize translation probability
@@ -44,7 +46,7 @@ class IBM1():
             for (t, s_dict) in self.theta.iteritems():
                 for s in s_dict:
                     # self.theta[t][s] = max(cnt_t_given_s[t][s] / cnt_t[t], 10e-20)
-                    self.theta[t][s] = max(cnt_t_given_s[t][s] / cnt_t[t], 10e-20)
+                    self.theta[t][s] = (cnt_t_given_s[t][s] + self.n) / (cnt_t[t] + self.n * self.tgt_size)
             print('Done 2')
 
             # (3) Calculate log data likelihood
@@ -89,3 +91,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

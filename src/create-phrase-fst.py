@@ -1,41 +1,58 @@
-__author__ = 'jjhu'
-import sys
 from collections import defaultdict
+import codecs
+import sys
 
+def main(argv):
+    fout = codecs.open(argv[2], 'w','utf-8')
+    state_connect = defaultdict(dict)  # {0:{('un','<eps>'):4,}}
+    statenum = 0
 
-def create_fst(phrase_file, fst_file):
-    ffst = open(fst_file, 'w')
-    state = defaultdict()
-    state_idx = 0
-
-    for line in open(phrase_file, 'r'):
-        phr = line.strip().split('\t')
-        s_phr, t_phr, score = phr[0], phr[1], phr[2]
-
-        pre_state = 0
-        for s in s_phr.strip().split():
-            if s + u"<eps>" in state[pre_state]:
-                pre_state = state[pre_state][s + u"<eps>"]
+    NULL = u'<eps>'
+    fin = codecs.open(argv[1], 'r', 'utf-8')
+    for phrase in fin:
+        itemli = phrase.strip().split(u'\t')
+        source = itemli[0].split(u' ')
+        target = itemli[1].split(u' ')
+        try:
+            prob = itemli[2]
+        except:
+            print phrase
+        laststate = 0
+        for item in source:
+            if (item, NULL) in state_connect[laststate]:
+                laststate = state_connect[laststate][(item, NULL)]
             else:
-                state_idx += 1
-                state[pre_state][s + u"<eps"] = state_idx
-                print >> ffst, "{} {} {} <eps>".format(pre_state, state_idx, s)
-                pre_state = state_idx
-
-        for t in t_phr.strip().split():
-            if u"<eps>" + t in state[pre_state]:
-                pre_state = state[pre_state][u"<eps>" + t]
+                statenum += 1
+                state_connect[laststate][(item, NULL)] = statenum
+                fout.write(
+                    str(laststate) + u' ' + str(state_connect[laststate][(item, NULL)]) + u' ' + item + u' ' + NULL + u'\n')
+                laststate = statenum
+        for item in target:
+            if (NULL, item) in state_connect[laststate]:
+                laststate = state_connect[laststate][(NULL, item)]
             else:
-                state_idx += 1
-                state[pre_state][u"<eps>" + t] = state_idx
-                print >> ffst, "{} {} <eps> {}".format(pre_state, state_idx, t)
+                statenum += 1
+                state_connect[laststate][(NULL, item)] = statenum
+                fout.write(
+                    str(laststate) + u' ' + str(state_connect[laststate][(NULL, item)]) + u' ' + NULL + u' ' + item + u'\n')
+                laststate = statenum
+        fout.write(
+            str(laststate) + u' ' + str(0) + u' ' + NULL + u' ' + NULL + u' ' + prob + u'\n')
 
-        print >> ffst, str(pre_state) + " 0 <eps> <eps> " + score
+    """
+    Add special token and ending state.
+    """
+    fout.write(
+        str(0) + u' ' + str(0) + u' ' + u'</s>' + u' ' + u'</s>' + u'\n')
+    fout.write(
+        str(0) + u' ' + str(0) + u' ' + u'<unk>' + u' ' + u'<unk>' + u'\n')
+    fout.write(
+        str(0) + u'\n')
 
-    print >> ffst, '0 0 </s> </s>'
-    print >> ffst, '0 0 <unk> <unk>'
-    print >> ffst, '0'
-    ffst.close()
+    fout.close()
+    fin.close()
 
+if __name__ == "__main__":
+    # argv = ['','phrase_example.txt','phrase-fst.txt']
+    main(sys.argv)
 
-create_fst(sys.argv[1], sys.argv[2])
